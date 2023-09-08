@@ -1,4 +1,12 @@
 #include "systemcalls.h"
+#include <stdlib.h>
+#include <errno.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <string.h>
 
 /**
  * @param cmd the command to execute with system()
@@ -16,6 +24,7 @@ bool do_system(const char *cmd)
  *   and return a boolean true if the system() call completed with success
  *   or false() if it returned a failure
 */
+    system(cmd);
 
     return true;
 }
@@ -58,10 +67,37 @@ bool do_exec(int count, ...)
  *   as second argument to the execv() command.
  *
 */
+    bool ret = true;
+    int errn;
+    pid_t pid = fork();
+    if (pid == 0) {
+        // child
+        execv(command[0], command);
+        exit(errno);
+    }
+    else if (pid > 0) {
+        // parent
+        int wstatus = 0;
+        int wret = waitpid(pid, &wstatus, 0);
+        //int wret = wait(&wstatus);
+        if (wret < 0) {
+            errn = errno;
+            fprintf(stderr, "Error %d: %s\n", errn, strerror(errn));
+            ret = false;
+        }
+        else if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus)) {
+            ret = false;
+        }
+    }
+    else {
+        errn = errno;
+        fprintf(stderr, "Error %d: %s\n", errn, strerror(errn));
+        ret = false;
+    }
 
     va_end(args);
 
-    return true;
+    return ret;
 }
 
 /**
@@ -93,7 +129,49 @@ bool do_exec_redirect(const char *outputfile, int count, ...)
  *
 */
 
+
+    int errn;
+    int outfd = open(outputfile, O_WRONLY|O_TRUNC|O_CREAT, 0644);
+    if (outfd < 0) {
+        errn = errno;
+        fprintf(stderr, "Error %d: %s\n", errn, strerror(errn));
+        va_end(args);
+        return false;
+    }
+
+    bool ret = true;
+    pid_t pid = fork();
+    if (pid == 0) {
+        // child
+        if (dup2(outfd, STDOUT_FILENO) < 0) {
+            errn = errno;
+            fprintf(stderr, "Error %d: %s\n", errn, strerror(errn));
+        }
+        close(outfd);
+        execv(command[0], command);
+        exit(errno);
+    }
+    else if (pid > 0) {
+        // parent
+        int wstatus = 0;
+        int wret = waitpid(pid, &wstatus, 0);
+        //int wret = wait(&wstatus);
+        if (wret < 0) {
+            errn = errno;
+            fprintf(stderr, "Error %d: %s\n", errn, strerror(errn));
+            ret = false;
+        }
+        else if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus)) {
+            ret = false;
+        }
+    }
+    else {
+        errn = errno;
+        fprintf(stderr, "Error %d: %s\n", errn, strerror(errn));
+        ret = false;
+    }
+
     va_end(args);
 
-    return true;
+    return ret;
 }
