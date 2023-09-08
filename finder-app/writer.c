@@ -11,7 +11,7 @@ int main(int ac, char **av) {
     if (ac != 3)
     {
         syslog(LOG_ERR, "Wrong args specified, expected 2, got %d", ac-1);
-        return -1;
+        return 1;
     }
     syslog(LOG_DEBUG, "Writing %s to %s", av[2], av[1]);
 
