@@ -2,6 +2,9 @@
 # Tester script for assignment 1 and assignment 2
 # Author: Siddhant Jajoo
 
+# Change for assignment 4
+SCRIPT_DIR=$(dirname $(realpath $0))
+
 set -e
 set -u
 
@@ -32,7 +35,7 @@ echo "Writing ${NUMFILES} files containing string ${WRITESTR} to ${WRITEDIR}"
 rm -rf "${WRITEDIR}"
 
 # create $WRITEDIR if not assignment1
-assignment=`cat ../conf/assignment.txt`
+assignment=`cat ${SCRIPT_DIR}/../conf/assignment.txt`
 
 if [ $assignment != 'assignment1' ]
 then
@@ -54,10 +57,10 @@ fi
 
 for i in $( seq 1 $NUMFILES)
 do
-	./writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
+	${SCRIPT_DIR}/writer "$WRITEDIR/${username}$i.txt" "$WRITESTR"
 done
 
-OUTPUTSTRING=$(./finder.sh "$WRITEDIR" "$WRITESTR")
+OUTPUTSTRING=$(${SCRIPT_DIR}/finder.sh "$WRITEDIR" "$WRITESTR")
 
 # remove temporary directories
 rm -rf /tmp/aeld-data
